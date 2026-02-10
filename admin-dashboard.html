@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PLM Admin Dashboard - Manage projects, users, parts, and assemblies">
+    <meta name="theme-color" content="#007bff">
+    <title>PLM - Admin Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="logo-text">PLM</h1>
+                <p class="role-badge">Admin</p>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item active" data-menu="approvals">
+                    <span class="icon">✅</span>
+                    <span>Approvals</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="projects">
+                    <span class="icon">📊</span>
+                    <span>Projects</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="users">
+                    <span class="icon">👥</span>
+                    <span>Users</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="vault">
+                    <span class="icon">🗂️</span>
+                    <span>Vault</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="requests">
+                    <span class="icon">📝</span>
+                    <span>Requests</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="history">
+                    <span class="icon">📜</span>
+                    <span>History</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="reports">
+                    <span class="icon">📈</span>
+                    <span>Reports</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="ecos">
+                    <span class="icon">🔄</span>
+                    <span>Change Orders</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="settings">
+                    <span class="icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2 id="page-title">User Approvals</h2>
+                <div class="global-search-container">
+                    <span class="global-search-icon">🔍</span>
+                    <input type="text" class="global-search-input" placeholder="Search parts, assemblies, projects, ECOs...">
+                    <div class="search-results-dropdown"></div>
+                </div>
+                <div class="top-bar-actions">
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+                    <div style="position:relative">
+                        <button class="notification-bell" onclick="toggleNotificationDropdown()">
+                            🔔<span class="notification-badge" style="display:none">0</span>
+                        </button>
+                        <div class="notification-dropdown">
+                            <div class="notification-dropdown-header">
+                                <span>Notifications</span>
+                                <button class="btn-icon" onclick="apiRequest('/notifications/mark-read',{method:'POST',body:JSON.stringify({})}).then(()=>{loadNotifications();toggleNotificationDropdown();})">Mark all read</button>
+                            </div>
+                            <div class="notification-list"></div>
+                        </div>
+                    </div>
+                    <span id="username" class="username">Admin User</span>
+                </div>
+            </header>
+
+            <div class="hierarchy-flow" id="hierarchyFlow">
+                <div class="flow-step" data-role="designer">Designer</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step" data-role="approver">Approver</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step" data-role="admin">Admin</div>
+            </div>
+
+            <!-- Approvals Section (NEW) -->
+            <section class="content-section" id="approvals-section">
+                <div class="section-header">
+                    <h3>Pending User Approvals</h3>
+                </div>
+
+                <div class="approval-cards" id="approvalsContainer">
+                    <p style="text-align: center; color: #999; padding: 40px;">Loading pending approvals...</p>
+                </div>
+            </section>
+            <section class="content-section" id="projects-section">
+                <div class="section-header">
+                    <h3>Project Management</h3>
+                    <button class="btn btn-primary" onclick="openCreateProjectModal()">+ New Project</button>
+                </div>
+
+                <div class="filters">
+                    <input type="text" id="searchInput" placeholder="Search projects..." class="filter-input">
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>PLM ID</th>
+                                <th>Owner</th>
+                                <th>Created</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectsTable">
+                            <tr>
+                                <td>Dashboard Project</td>
+                                <td>PLM-PRI-003</td>
+                                <td>PRAVAIG-15</td>
+                                <td>2026-02-04</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td class="actions">
+                                    <button class="btn-icon" onclick="editProject(3)">✏️</button>
+                                    <button class="btn-icon" onclick="deleteProject(3)">🗑️</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Users Section -->
+            <section class="content-section" id="users-section" style="display: none;">
+                <div class="section-header">
+                    <h3>User Management</h3>
+                    <button class="btn btn-primary" onclick="openCreateUserModal()">+ Add User</button>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>User ID</th>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable">
+                            <tr>
+                                <td>PRAVAIG-15</td>
+                                <td>Praveen Kumar</td>
+                                <td>praveen@plm.com</td>
+                                <td><span class="role-badge">Admin</span></td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td class="actions">
+                                    <button class="btn-icon" onclick="editUser(1)">✏️</button>
+                                    <button class="btn-icon" onclick="deleteUser(1)">🗑️</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Vault Section -->
+            <section class="content-section" id="vault-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Parts</h3>
+                    <button class="btn btn-primary" onclick="openCreatePartModal()">+ New Part</button>
+                </div>
+
+                <div class="filters">
+                    <input type="text" id="vaultPartSearch" placeholder="Search parts (code, name, material, vendor)..." class="filter-input" oninput="filterPartsTable()">
+                    <select id="vaultPartCriticality" class="filter-select" onchange="filterPartsTable()">
+                        <option value="">All Criticality</option>
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                    <select id="vaultPartLifecycle" class="filter-select" onchange="filterPartsTable()">
+                        <option value="">All Lifecycle</option>
+                        <option value="draft">Draft</option>
+                        <option value="active">Active</option>
+                        <option value="released">Released</option>
+                        <option value="obsolete">Obsolete</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Part Code</th>
+                                <th>Name</th>
+                                <th>Material</th>
+                                <th>Criticality</th>
+                                <th>Lifecycle</th>
+                                <th>Owner</th>
+                                <th>Versions</th>
+                                <th>Latest</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="partsTable">
+                            <tr>
+                                <td colspan="9" style="text-align: center; padding: 20px;">Loading parts...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section-header" style="margin-top: 30px;">
+                    <h3>Assemblies</h3>
+                    <button class="btn btn-primary" onclick="openCreateAssemblyModal()">+ New Assembly</button>
+                </div>
+
+                <div class="filters">
+                    <input type="text" id="vaultAssemblySearch" placeholder="Search assemblies..." class="filter-input" oninput="filterAssembliesTable()">
+                    <select id="vaultAssemblyCriticality" class="filter-select" onchange="filterAssembliesTable()">
+                        <option value="">All Criticality</option>
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Assembly Code</th>
+                                <th>Name</th>
+                                <th>Criticality</th>
+                                <th>Lifecycle</th>
+                                <th>Owner</th>
+                                <th>Versions</th>
+                                <th>Latest</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assembliesTable">
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px;">Loading assemblies...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Requests Section -->
+            <section class="content-section" id="requests-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Edit Access Requests</h3>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Requester</th>
+                                <th>Part</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="editRequestsTable">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 20px;">Loading edit requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section-header" style="margin-top: 30px;">
+                    <h3>Release Requests</h3>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Requester</th>
+                                <th>Item Type</th>
+                                <th>Version ID</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="releaseRequestsTable">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 20px;">Loading release requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- History Section -->
+            <section class="content-section" id="history-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Activity History</h3>
+                    <div style="display: flex; gap: 10px;">
+                        <select id="historyFilter" class="filter-select" onchange="filterHistory()">
+                            <option value="">All Activities</option>
+                            <option value="LOGIN">Logins</option>
+                            <option value="ACCOUNT_CREATED">Account Created</option>
+                            <option value="USER_APPROVED">User Approved</option>
+                            <option value="USER_REJECTED">User Rejected</option>
+                            <option value="PROJECT_CREATED">Project Created</option>
+                            <option value="PROJECT_DELETED">Project Deleted</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>User</th>
+                                <th>Activity Type</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTable">
+                            <tr>
+                                <td colspan="5" style="text-align: center; color: #999; padding: 40px;">Loading activity history...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Reports Section -->
+            <section class="content-section" id="reports-section" style="display: none;">
+                <div class="section-header">
+                    <h3>System Reports & Analytics</h3>
+                    <div>
+                        <button class="btn btn-primary" onclick="loadAnalytics()">Refresh</button>
+                        <button class="btn btn-primary" onclick="exportCSV('/export/parts', 'parts_export.csv')">Export Parts CSV</button>
+                        <button class="btn btn-primary" onclick="exportCSV('/export/assemblies', 'assemblies_export.csv')">Export Assemblies CSV</button>
+                        <button class="btn btn-primary" onclick="window.print()">Print Report</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <h4>Total Projects</h4>
+                        <p class="stat-number" id="statProjects">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Active Users</h4>
+                        <p class="stat-number" id="statUsers">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Total Parts</h4>
+                        <p class="stat-number" id="statParts">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Total Assemblies</h4>
+                        <p class="stat-number" id="statAssemblies">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Open ECOs</h4>
+                        <p class="stat-number" id="statECOs">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Pending Edit Requests</h4>
+                        <p class="stat-number" id="statEditReqs">-</p>
+                    </div>
+                    <div class="stat-card">
+                        <h4>Pending Release Requests</h4>
+                        <p class="stat-number" id="statReleaseReqs">-</p>
+                    </div>
+                </div>
+
+                <div class="table-container" style="margin-top: 20px;">
+                    <h4 style="margin-bottom: 12px;">Parts by Lifecycle State</h4>
+                    <table>
+                        <thead><tr><th>Lifecycle State</th><th>Count</th><th>Bar</th></tr></thead>
+                        <tbody id="lifecycleTable"><tr><td colspan="3">Click Refresh to load</td></tr></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ECO Section -->
+            <section class="content-section" id="ecos-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Engineering Change Orders</h3>
+                    <button class="btn btn-primary" onclick="openModal('createEcoModal')">+ New ECO</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-bottom:16px; flex-wrap:wrap;">
+                    <input type="text" id="ecoSearchInput" placeholder="Search ECOs..." style="flex:1; min-width:200px;" oninput="loadECOs()">
+                    <select id="ecoStatusFilter" onchange="loadECOs()">
+                        <option value="">All Status</option>
+                        <option value="draft">Draft</option>
+                        <option value="submitted">Submitted</option>
+                        <option value="in_review">In Review</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="implemented">Implemented</option>
+                    </select>
+                    <select id="ecoPriorityFilter" onchange="loadECOs()">
+                        <option value="">All Priority</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div id="ecoList"></div>
+            </section>
+
+            <!-- Settings Section -->
+            <section class="content-section" id="settings-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Settings</h3>
+                </div>
+
+                <!-- Change Password Form -->
+                <div class="settings-form">
+                    <h4>Change Password</h4>
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <div class="password-toggle-container">
+                            <input type="password" id="currentPassword" class="password-field" placeholder="Enter your current password" required>
+                            <button type="button" class="password-toggle-btn" data-target="currentPassword" aria-label="Toggle password visibility">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <div class="password-toggle-container">
+                            <input type="password" id="newPassword" class="password-field" placeholder="Enter new password" required>
+                            <button type="button" class="password-toggle-btn" data-target="newPassword" aria-label="Toggle password visibility">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <div class="password-toggle-container">
+                            <input type="password" id="confirmPassword" class="password-field" placeholder="Confirm new password" required>
+                            <button type="button" class="password-toggle-btn" data-target="confirmPassword" aria-label="Toggle password visibility">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="passwordError" class="error-message" style="display:none;"></div>
+                    <div id="passwordSuccess" class="success-message" style="display:none;"></div>
+                    <button class="btn btn-primary" onclick="handleChangePassword()">Change Password</button>
+                </div>
+
+                <!-- Update Email Form -->
+                <div class="settings-form">
+                    <h4>Update Email</h4>
+                    <div class="form-group">
+                        <label for="currentEmail">Current Email</label>
+                        <input type="email" id="currentEmail" placeholder="Your current email" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="newEmail">New Email</label>
+                        <input type="email" id="newEmail" placeholder="Enter new email address" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailPassword">Password (for verification)</label>
+                        <div class="password-toggle-container">
+                            <input type="password" id="emailPassword" class="password-field" placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle-btn" data-target="emailPassword" aria-label="Toggle password visibility">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="emailError" class="error-message" style="display:none;"></div>
+                    <div id="emailSuccess" class="success-message" style="display:none;"></div>
+                    <button class="btn btn-primary" onclick="handleUpdateEmail()">Update Email</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('projectModal')">&times;</span>
+            <h2>Create New Project</h2>
+            <form>
+                <div class="form-group">
+                    <label>Project Name</label>
+                    <input type="text" placeholder="Enter project name" required>
+                </div>
+                <div class="form-group">
+                    <label>PLM ID</label>
+                    <input type="text" placeholder="Auto-generated" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Owner</label>
+                    <select required>
+                        <option>Select Owner</option>
+                        <option>PRAVAIG-15</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select required>
+                        <option>Active</option>
+                        <option>Inactive</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" onclick="submitCreateProject(event)">Create Project</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Approval Modal -->
+    <div id="userApprovalModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('userApprovalModal')">&times;</span>
+            <h2>User Approval</h2>
+            <div id="userApprovalDetails" style="margin-bottom: 20px; padding: 15px; background: rgba(0,123,255,0.1); border-radius: 8px;">
+                <p><strong>Username:</strong> <span id="approvalUsername"></span></p>
+                <p><strong>Email:</strong> <span id="approvalEmail"></span></p>
+                <p><strong>Role:</strong> <span id="approvalRole"></span></p>
+                <p><strong>Registered:</strong> <span id="approvalDate"></span></p>
+            </div>
+            <div style="border-top: 1px solid #3a3f45; padding-top: 15px;">
+                <p style="margin-bottom: 15px; color: #e4e6eb;">Do you want to approve this user account?</p>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn btn-secondary" onclick="closeModal('userApprovalModal')">Cancel</button>
+                    <button class="btn btn-success" id="approveBtn" onclick="approveUser()">✓ Approve</button>
+                    <button class="btn btn-danger" id="rejectBtn" onclick="rejectUser()">✗ Reject</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div id="editUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('editUserModal')">&times;</span>
+            <h2>Edit User</h2>
+            <form>
+                <div class="form-group">
+                    <label>User ID</label>
+                    <input type="text" id="editUserId" class="form-input" disabled>
+                </div>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="editUsername" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="editEmail" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select id="editRole" class="form-input" required>
+                        <option value="admin">Admin</option>
+                        <option value="approver">Approver</option>
+                        <option value="designer">Designer</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="editStatus" class="form-input" required>
+                        <option value="1">Active</option>
+                        <option value="0">Inactive</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary" onclick="updateUser()">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Part Modal -->
+    <div id="createPartModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createPartModal')">&times;</span>
+            <h2>Create Part</h2>
+            <form>
+                <div class="form-group">
+                    <label>Part Code *</label>
+                    <input type="text" id="partCode" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="partName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="partDescription" class="form-input" rows="2" placeholder="Part description..."></textarea>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div class="form-group">
+                        <label>Material</label>
+                        <input type="text" id="partMaterial" class="form-input" placeholder="Steel, Aluminum...">
+                    </div>
+                    <div class="form-group">
+                        <label>Vendor</label>
+                        <input type="text" id="partVendor" class="form-input" placeholder="Vendor name">
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div class="form-group">
+                        <label>Criticality</label>
+                        <select id="partCriticality" class="form-input">
+                            <option value="low">Low</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <input type="text" id="partTags" class="form-input" placeholder="tag1, tag2, tag3">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Working Path</label>
+                    <input type="text" id="partWorkingPath" class="form-input" placeholder="Project\\Working\\Parts\\GG">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="createPart()">Create Part</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Assembly Modal -->
+    <div id="createAssemblyModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createAssemblyModal')">&times;</span>
+            <h2>Create Assembly</h2>
+            <form>
+                <div class="form-group">
+                    <label>Assembly Code *</label>
+                    <input type="text" id="assemblyCode" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="assemblyName" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="assemblyDescription" class="form-input" rows="2" placeholder="Assembly description..."></textarea>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div class="form-group">
+                        <label>Criticality</label>
+                        <select id="assemblyCriticality" class="form-input">
+                            <option value="low">Low</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="high">High</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <input type="text" id="assemblyTags" class="form-input" placeholder="tag1, tag2">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Part Version IDs (comma-separated) *</label>
+                    <input type="text" id="assemblyPartVersions" class="form-input" placeholder="12, 13" required>
+                </div>
+                <div class="form-group">
+                    <label>Working Path</label>
+                    <input type="text" id="assemblyWorkingPath" class="form-input" placeholder="Project\\Working\\Assemblies\\AA">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="createAssembly()">Create Assembly</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Part Versions Modal -->
+    <div id="partVersionsModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('partVersionsModal')">&times;</span>
+            <h2>Part Versions</h2>
+            <div class="section-header" style="margin-top: 10px;">
+                <h3 id="partVersionsTitle">Part</h3>
+                <div style="display:flex;gap:8px;">
+                    <button class="btn btn-secondary" onclick="showPartImpact()">🔗 Impact</button>
+                    <button class="btn btn-primary" onclick="openCreatePartVersionModal()">+ New Version</button>
+                </div>
+            </div>
+            <div id="partMetadataBar" style="margin-bottom:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.9em;"></div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Version</th>
+                            <th>Status</th>
+                            <th>Change Notes</th>
+                            <th>Frozen By</th>
+                            <th>Working Path</th>
+                            <th>Storage Path</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="partVersionsTable">
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 20px;">Loading versions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="section-header" style="margin-top: 20px;">
+                <h3>Rollback</h3>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <input type="number" id="rollbackVersionId" class="form-input" placeholder="Version ID">
+                <button class="btn btn-secondary" onclick="rollbackPartVersion()">Rollback</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Part Version Modal -->
+    <div id="createPartVersionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createPartVersionModal')">&times;</span>
+            <h2>Create Part Version</h2>
+            <form>
+                <div class="form-group">
+                    <label>Version Label</label>
+                    <input type="text" id="partVersionLabel" class="form-input" placeholder="V2">
+                </div>
+                <div class="form-group">
+                    <label>Change Notes</label>
+                    <textarea id="partVersionChangeNotes" class="form-input" rows="3" placeholder="What changed in this version..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Working Path</label>
+                    <input type="text" id="partVersionWorkingPath" class="form-input" placeholder="Project\\Working\\Parts\\GG">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="createPartVersion()">Create Version</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assembly Versions Modal -->
+    <div id="assemblyVersionsModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('assemblyVersionsModal')">&times;</span>
+            <h2>Assembly Versions</h2>
+            <div class="section-header" style="margin-top: 10px;">
+                <h3 id="assemblyVersionsTitle">Assembly</h3>
+                <button class="btn btn-primary" onclick="openCreateAssemblyVersionModal()">+ New Version</button>
+            </div>
+            <div id="assemblyMetadataBar" style="margin-bottom:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.9em;"></div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Version</th>
+                            <th>Status</th>
+                            <th>Frozen By</th>
+                            <th>Working Path</th>
+                            <th>Storage Path</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assemblyVersionsTable">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 20px;">Loading versions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Assembly Version Modal -->
+    <div id="createAssemblyVersionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createAssemblyVersionModal')">&times;</span>
+            <h2>Create Assembly Version</h2>
+            <form>
+                <div class="form-group">
+                    <label>Version Label</label>
+                    <input type="text" id="assemblyVersionLabel" class="form-input" placeholder="V2">
+                </div>
+                <div class="form-group">
+                    <label>Part Version IDs (comma-separated) *</label>
+                    <input type="text" id="assemblyVersionPartIds" class="form-input" placeholder="12, 13" required>
+                </div>
+                <div class="form-group">
+                    <label>Working Path</label>
+                    <input type="text" id="assemblyVersionWorkingPath" class="form-input" placeholder="Project\\Working\\Assemblies\\AA">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="createAssemblyVersion()">Create Version</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Impact Analysis Modal -->
+    <div id="impactModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('impactModal')">&times;</span>
+            <h2>🔗 Dependency Impact Analysis</h2>
+            <p style="color:#aaa;margin-bottom:15px;">Assemblies referencing this part's versions:</p>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Assembly Code</th>
+                            <th>Assembly Name</th>
+                            <th>Assembly Version</th>
+                            <th>Assembly Status</th>
+                            <th>Part Version Used</th>
+                        </tr>
+                    </thead>
+                    <tbody id="impactTable">
+                        <tr>
+                            <td colspan="5" style="text-align:center;padding:20px;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOM Modal -->
+    <div id="bomModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('bomModal')">&times;</span>
+            <h2>📋 Bill of Materials (BOM)</h2>
+            <h3 id="bomTitle" style="color:#aaa;"></h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Part Code</th>
+                            <th>Part Name</th>
+                            <th>Version</th>
+                            <th>Status</th>
+                            <th>Material</th>
+                            <th>Vendor</th>
+                            <th>Criticality</th>
+                            <th>Owner</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bomTable">
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:20px;">Loading...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create ECO Modal -->
+    <div id="createEcoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createEcoModal')">&times;</span>
+            <h2>Create Engineering Change Order</h2>
+            <form>
+                <div class="form-group">
+                    <label>Title *</label>
+                    <input type="text" id="ecoTitle" class="form-input" placeholder="ECO title" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="ecoDescription" class="form-input" rows="3" placeholder="Detailed description"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Reason for Change</label>
+                    <textarea id="ecoReason" class="form-input" rows="2" placeholder="Why is this change needed?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Priority</label>
+                    <select id="ecoPriority" class="form-input">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Affected Parts (comma-separated codes)</label>
+                    <input type="text" id="ecoAffectedParts" class="form-input" placeholder="PRT-001, PRT-002">
+                </div>
+                <div class="form-group">
+                    <label>Affected Assemblies (comma-separated codes)</label>
+                    <input type="text" id="ecoAffectedAssemblies" class="form-input" placeholder="ASM-001">
+                </div>
+                <button type="button" class="btn btn-primary" onclick="createECO()">Create ECO</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ECO Detail Modal -->
+    <div id="ecoDetailModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('ecoDetailModal')">&times;</span>
+            <h2 id="ecoDetailTitle">ECO Details</h2>
+            <div id="ecoDetailContent"></div>
+            <div class="comment-thread" id="ecoComments">
+                <h4>Comments</h4>
+                <div id="ecoCommentsList"></div>
+                <div class="comment-input-row">
+                    <input type="text" id="ecoCommentInput" class="form-input" placeholder="Add a comment...">
+                    <button class="btn btn-primary" onclick="addEcoComment()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="admin-dashboard.js"></script>
+</body>
+</html>

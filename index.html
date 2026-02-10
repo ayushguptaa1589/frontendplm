@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PLM Product Lifecycle Management - Secure login for Admin, Approver, and Designer roles">
+    <meta name="theme-color" content="#007bff">
+    <title>PLM - Login & Signup</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preload" as="image" href="logo.jpeg">
+    <script src="api.js" defer></script>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Left Side - Branding & Marketing -->
+        <div class="left-section">
+            <div class="left-content">
+                <div class="branding">
+                    <h1>PLM</h1>
+                    <p class="tagline">Product Lifecycle Management</p>
+                </div>
+                
+                <div class="marketing-message">
+                    <h2>Manage your product journey with ease</h2>
+                    <p>Collaborate seamlessly as Admin, Approver, or Designer and drive your products to success.</p>
+                </div>
+
+                <div class="feature-highlights">
+                    <div class="feature">
+                        <span class="feature-icon">✓</span>
+                        <span>Real-time Collaboration</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">✓</span>
+                        <span>Role-based Access</span>
+                    </div>
+                    <div class="feature">
+                        <span class="feature-icon">✓</span>
+                        <span>Secure & Reliable</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side - Forms -->
+        <div class="right-section">
+            <div class="form-wrapper">
+                <!-- Logo -->
+                <div class="logo-section">
+                    <img src="logo.jpeg" alt="PLM Logo" class="logo" loading="lazy" width="150" height="150">
+                </div>
+
+                <!-- Toggle Buttons -->
+                <div class="toggle-buttons">
+                    <button class="toggle-btn active" id="loginTab">Login</button>
+                    <button class="toggle-btn" id="signupTab">Signup</button>
+                </div>
+
+                <!-- Login Form -->
+                <div class="form-container active" id="loginForm">
+                    <form>
+                        <div class="form-group">
+                            <label for="loginId">User ID</label>
+                            <input type="text" id="loginId" name="loginId" placeholder="Enter your ID" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loginPassword">Password</label>
+                            <div class="password-toggle-container">
+                                <input type="password" id="loginPassword" name="loginPassword" placeholder="Enter your password" class="password-field" required>
+                                <button type="button" class="password-toggle-btn" data-target="loginPassword" aria-label="Toggle password visibility">
+                                    <span class="toggle-icon">👁️</span>
+                                </button>
+                            </div>
+                            <p style="text-align: right; margin-top: 5px;"><a href="#" onclick="openForgotPasswordModal(); return false;" style="text-decoration: none; color: #007bff; font-size: 12px;">Forgot password?</a></p>
+                        </div>
+                        <div id="loginError" class="error-message" style="display:none;"></div>
+
+                        <div class="form-group">
+                            <label for="loginRole">Role</label>
+                            <select id="loginRole" name="loginRole" required>
+                                <option value="">Select Role</option>
+                                <option value="admin">Admin</option>
+                                <option value="approver">Approver</option>
+                                <option value="designer">Designer</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-submit">Login</button>
+                    </form>
+                    <p class="redirect-text">Don't have an account? <a href="#" onclick="toggleForms(); return false;" role="button">Sign up here</a></p>
+                </div>
+
+                <!-- Signup Form -->
+                <div class="form-container" id="signupForm">
+                    <form>
+                        <div class="form-group">
+                            <label for="signupId">User ID</label>
+                            <input type="text" id="signupId" name="signupId" placeholder="Create your ID" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signupEmail">Email</label>
+                            <input type="email" id="signupEmail" name="signupEmail" placeholder="Enter your email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="signupPassword">Password</label>
+                            <div class="password-toggle-container">
+                                <input type="password" id="signupPassword" name="signupPassword" placeholder="Create a password" class="password-field" required>
+                                <button type="button" class="password-toggle-btn" data-target="signupPassword" aria-label="Toggle password visibility">
+                                    <span class="toggle-icon">👁️</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="signupError" class="error-message" style="display:none;"></div>
+
+                        <div class="form-group">
+                            <label for="signupRole">Select Role</label>
+                            <select id="signupRole" name="signupRole" required>
+                                <option value="">Select Role</option>
+                                <option value="approver">Approver</option>
+                                <option value="designer">Designer</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-submit">Signup</button>
+                    </form>
+                    <p class="redirect-text">Already have an account? <a href="#" onclick="toggleForms(); return false;" role="button">Login here</a></p>
+                </div>
+
+                <!-- Footer -->
+                <div class="form-footer">
+                    <p>© 2026 PLM. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+        <div style="background:white; padding:40px; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,0.1); width:90%; max-width:400px;">
+            <h3 style="text-align:center; margin-bottom:30px; color:#333;">Forgot Your Password?</h3>
+
+            <!-- Step 1: Request Reset Code -->
+            <div id="resetStep1">
+                <p style="color:#666; margin-bottom:20px;">Enter your username and email to receive a password reset code.</p>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; color:#333; font-weight:500;">Username</label>
+                    <input type="text" id="resetUsername" placeholder="Enter your username" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; color:#333; font-weight:500;">Email</label>
+                    <input type="email" id="resetEmail" placeholder="Enter your email" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
+                </div>
+                <div id="resetError1" class="error-message" style="margin-bottom:15px; display:none;"></div>
+                <button onclick="requestPasswordReset()" style="width:100%; padding:10px; background:#007bff; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:500;">Get Reset Code</button>
+            </div>
+
+            <!-- Step 2: Reset Password -->
+            <div id="resetStep2" style="display:none;">
+                <p style="color:#666; margin-bottom:20px;">Enter the reset code and your new password.</p>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; color:#333; font-weight:500;">Reset Code</label>
+                    <input type="text" id="resetCode" placeholder="Enter 6-digit code" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; color:#333; font-weight:500;">New Password</label>
+                    <input type="password" id="resetNewPassword" placeholder="Enter new password" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
+                </div>
+                <div style="margin-bottom:15px;">
+                    <label style="display:block; margin-bottom:5px; color:#333; font-weight:500;">Confirm Password</label>
+                    <input type="password" id="resetConfirmPassword" placeholder="Confirm new password" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:4px; box-sizing:border-box;">
+                </div>
+                <div id="resetError2" class="error-message" style="margin-bottom:15px; display:none;"></div>
+                <div id="resetSuccess" class="success-message" style="margin-bottom:15px; display:none;"></div>
+                <button onclick="completePasswordReset()" style="width:100%; padding:10px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:500; margin-bottom:10px;">Reset Password</button>
+                <button onclick="closeForgotPasswordModal()" style="width:100%; padding:10px; background:#6c757d; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:500;">Cancel</button>
+            </div>
+
+            <!-- Close Button -->
+            <button onclick="closeForgotPasswordModal()" style="position:absolute; top:10px; right:15px; background:none; border:none; font-size:24px; cursor:pointer; color:#999;">&times;</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

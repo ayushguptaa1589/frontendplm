@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PLM Approver Dashboard - Review and approve parts, assemblies, and change requests">
+    <meta name="theme-color" content="#007bff">
+    <title>PLM - Approver Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="logo-text">PLM</h1>
+                <p class="role-badge approver">Approver</p>
+            </div>
+            
+            <nav class="sidebar-menu">
+                <a href="#" class="menu-item active" data-menu="approvals">
+                    <span class="icon">✅</span>
+                    <span>Approvals</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="projects">
+                    <span class="icon">📋</span>
+                    <span>Projects</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="submissions">
+                    <span class="icon">📥</span>
+                    <span>Submissions</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="vault">
+                    <span class="icon">🗂️</span>
+                    <span>Vault</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="requests">
+                    <span class="icon">📝</span>
+                    <span>Requests</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="feedback">
+                    <span class="icon">💬</span>
+                    <span>Feedback</span>
+                </a>
+                <a href="#" class="menu-item" data-menu="settings">
+                    <span class="icon">⚙️</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <h2 id="page-title">Pending Approvals</h2>
+                <div class="top-bar-actions">
+                    <div class="global-search-container">
+                        <input type="text" id="globalSearchInput" class="global-search-input" placeholder="Search parts, assemblies, projects...">
+                        <div id="searchResultsDropdown" class="search-results-dropdown"></div>
+                    </div>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">☀️</button>
+                    <div class="notification-bell" onclick="toggleNotificationDropdown()">
+                        🔔<span id="notifBadge" class="notif-badge" style="display:none;">0</span>
+                        <div id="notificationDropdown" class="notification-dropdown">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                                <strong>Notifications</strong>
+                                <button onclick="markAllRead()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:12px;">Mark all read</button>
+                            </div>
+                            <div id="notification-list"></div>
+                        </div>
+                    </div>
+                    <span id="username" class="username">Approver User</span>
+                </div>
+            </header>
+
+            <div class="hierarchy-flow" id="hierarchyFlow">
+                <div class="flow-step" data-role="designer">Designer</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step" data-role="approver">Approver</div>
+                <div class="flow-arrow">→</div>
+                <div class="flow-step" data-role="admin">Admin</div>
+            </div>
+
+            <!-- Approvals Section -->
+            <section class="content-section" id="approvals-section">
+                <div class="section-header">
+                    <h3>Items Pending Approval</h3>
+                </div>
+
+                <div class="filters">
+                    <input type="text" id="searchInput" placeholder="Search submissions..." class="filter-input">
+                    <select id="typeFilter" class="filter-select">
+                        <option value="">All Types</option>
+                        <option value="Draft">Draft</option>
+                        <option value="Mockup">Mockup</option>
+                        <option value="Final">Final</option>
+                    </select>
+                </div>
+
+                <div class="approval-cards" id="approvalsContainer">
+                    <p style="text-align: center; color: #999; padding: 40px;">Loading submissions...</p>
+                </div>
+            </section>
+
+            <!-- Projects Section -->
+            <section class="content-section" id="projects-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Project Overview</h3>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>PLM ID</th>
+                                <th>Manager</th>
+                                <th>Status</th>
+                                <th>Progress</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectsTable">
+                            <tr>
+                                <td>Dashboard Project</td>
+                                <td>PLM-PRI-003</td>
+                                <td>PRAVAIG-15</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 65%"></div>
+                                    </div>
+                                </td>
+                                <td class="actions">
+                                    <button class="btn-icon" onclick="viewProject(3)">👁️</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Submissions Section -->
+            <section class="content-section" id="submissions-section" style="display: none;">
+                <div class="section-header">
+                    <h3>All Submissions</h3>
+                </div>
+
+                <div class="filters">
+                    <select id="statusFilter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Submission</th>
+                                <th>Designer</th>
+                                <th>Project</th>
+                                <th>Status</th>
+                                <th>Submitted</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="submissionsTable">
+                            <tr>
+                                <td>Design Mockup</td>
+                                <td>DESIGNER-01</td>
+                                <td>PLM-PRI-003</td>
+                                <td><span class="status-badge approved">Approved</span></td>
+                                <td>2026-02-05</td>
+                                <td class="actions">
+                                    <button class="btn-icon" onclick="viewSubmission(1)">👁️</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Feedback Section -->
+            <section class="content-section" id="feedback-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Feedback & Comments</h3>
+                </div>
+
+                <div class="feedback-container">
+                    <div class="feedback-item">
+                        <div class="feedback-header">
+                            <strong>Dashboard Project - Design</strong>
+                            <span class="feedback-date">2 hours ago</span>
+                        </div>
+                        <div class="feedback-content">
+                            <p><strong>From:</strong> PRAVAIG-15 (Admin)</p>
+                            <p>Design looks great! Please add some refinements to the color scheme. The blue is too saturated.</p>
+                        </div>
+                    </div>
+
+                    <div class="feedback-item">
+                        <div class="feedback-header">
+                            <strong>Code Review - Feature Update</strong>
+                            <span class="feedback-date">5 hours ago</span>
+                        </div>
+                        <div class="feedback-content">
+                            <p><strong>From:</strong> PRAVAIG-15 (Admin)</p>
+                            <p>Code quality is good. Needs some unit tests before approval.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Vault Section -->
+            <section class="content-section" id="vault-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Parts</h3>
+                </div>
+
+                <div class="filters">
+                    <input type="text" id="approverPartSearch" placeholder="Search parts..." class="filter-input" oninput="filterApproverParts()">
+                    <select id="approverPartCriticality" class="filter-select" onchange="filterApproverParts()">
+                        <option value="">All Criticality</option>
+                        <option value="low">Low</option>
+                        <option value="normal">Normal</option>
+                        <option value="high">High</option>
+                        <option value="critical">Critical</option>
+                    </select>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Part Code</th>
+                                <th>Name</th>
+                                <th>Material</th>
+                                <th>Criticality</th>
+                                <th>Owner</th>
+                                <th>Versions</th>
+                                <th>Latest</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approverPartsTable">
+                            <tr>
+                                <td colspan="8" style="text-align: center; padding: 20px;">Loading parts...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section-header" style="margin-top: 30px;">
+                    <h3>Assemblies</h3>
+                </div>
+
+                <div class="filters">
+                    <input type="text" id="approverAssemblySearch" placeholder="Search assemblies..." class="filter-input" oninput="filterApproverAssemblies()">
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Assembly Code</th>
+                                <th>Name</th>
+                                <th>Criticality</th>
+                                <th>Owner</th>
+                                <th>Versions</th>
+                                <th>Latest</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approverAssembliesTable">
+                            <tr>
+                                <td colspan="7" style="text-align: center; padding: 20px;">Loading assemblies...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Requests Section -->
+            <section class="content-section" id="requests-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Edit Access Requests</h3>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Requester</th>
+                                <th>Part</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approverEditRequestsTable">
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 20px;">Loading edit requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="section-header" style="margin-top: 30px;">
+                    <h3>Release Requests</h3>
+                </div>
+
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Requester</th>
+                                <th>Item Type</th>
+                                <th>Version ID</th>
+                                <th>Reason</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="approverReleaseRequestsTable">
+                            <tr>
+                                <td colspan="6" style="text-align: center; padding: 20px;">Loading release requests...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section class="content-section" id="settings-section" style="display: none;">
+                <div class="section-header">
+                    <h3>Settings</h3>
+                </div>
+
+                <!-- Change Password Form -->
+                <div class="settings-form">
+                    <h4>Change Password</h4>
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <div class="password-toggle-container">
+                            <input type="password" id="currentPassword" class="password-field" placeholder="Enter your current password" required>
+                            <button type="button" class="password-toggle-btn" data-target="currentPassword" aria-label="Toggle password visibility">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <div class="password-toggle-container">
+                            <input type="password" id="newPassword" class="password-field" placeholder="Enter new password" required>
+                            <button type="button" class="password-toggle-btn" data-target="newPassword" aria-label="Toggle password visibility">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Confirm New Password</label>
+                        <div class="password-toggle-container">
+                            <input type="password" id="confirmPassword" class="password-field" placeholder="Confirm new password" required>
+                            <button type="button" class="password-toggle-btn" data-target="confirmPassword" aria-label="Toggle password visibility">
+                                <span class="toggle-icon">👁️</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="passwordError" class="error-message" style="display:none;"></div>
+                    <div id="passwordSuccess" class="success-message" style="display:none;"></div>
+                    <button class="btn btn-primary" onclick="handleChangePassword()">Change Password</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Approver Part Versions Modal -->
+    <div id="approverPartVersionsModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('approverPartVersionsModal')">&times;</span>
+            <h2>Part Versions</h2>
+            <div class="section-header" style="margin-top: 10px;">
+                <h3 id="approverPartVersionsTitle">Part</h3>
+                <button class="btn btn-secondary" onclick="showApproverPartImpact()">🔗 Impact</button>
+            </div>
+            <div id="approverPartMetadataBar" style="margin-bottom:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.9em;"></div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Version</th>
+                            <th>Status</th>
+                            <th>Change Notes</th>
+                            <th>Frozen By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approverPartVersionsTable">
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 20px;">Loading versions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approver Assembly Versions Modal -->
+    <div id="approverAssemblyVersionsModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('approverAssemblyVersionsModal')">&times;</span>
+            <h2>Assembly Versions</h2>
+            <div class="section-header" style="margin-top: 10px;">
+                <h3 id="approverAssemblyVersionsTitle">Assembly</h3>
+            </div>
+            <div id="approverAssemblyMetadataBar" style="margin-bottom:10px;padding:10px;background:rgba(255,255,255,0.05);border-radius:8px;font-size:0.9em;"></div>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Version</th>
+                            <th>Status</th>
+                            <th>Frozen By</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approverAssemblyVersionsTable">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 20px;">Loading versions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Impact Modal (Approver) -->
+    <div id="approverImpactModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('approverImpactModal')">&times;</span>
+            <h2>🔗 Dependency Impact</h2>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Assembly Code</th>
+                            <th>Assembly Name</th>
+                            <th>Assembly Version</th>
+                            <th>Status</th>
+                            <th>Part Version Used</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approverImpactTable">
+                        <tr><td colspan="5" style="text-align:center;padding:20px;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- BOM Modal (Approver) -->
+    <div id="approverBomModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('approverBomModal')">&times;</span>
+            <h2>📋 Bill of Materials</h2>
+            <h3 id="approverBomTitle" style="color:#aaa;"></h3>
+            <div class="table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Part Code</th>
+                            <th>Part Name</th>
+                            <th>Version</th>
+                            <th>Status</th>
+                            <th>Material</th>
+                            <th>Vendor</th>
+                            <th>Criticality</th>
+                        </tr>
+                    </thead>
+                    <tbody id="approverBomTable">
+                        <tr><td colspan="7" style="text-align:center;padding:20px;">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Approval Modal -->
+    <div id="approvalModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('approvalModal')">&times;</span>
+            <h2>Review & Provide Feedback</h2>
+            <div id="submissionDetails" style="margin-bottom: 20px; padding: 15px; background: rgba(0,123,255,0.1); border-radius: 8px;">
+                <p><strong>Designer:</strong> <span id="detailDesigner"></span></p>
+                <p><strong>Project:</strong> <span id="detailProject"></span></p>
+                <p><strong>Type:</strong> <span id="detailType"></span></p>
+                <p><strong>Submitted:</strong> <span id="detailDate"></span></p>
+            </div>
+            <form id="approvalForm" onsubmit="submitDecision(event)">
+                <div class="form-group">
+                    <label>Decision *</label>
+                    <select id="decision" required>
+                        <option value="">Select Decision</option>
+                        <option value="approved">✓ Approve</option>
+                        <option value="rejected">✗ Reject</option>
+                        <option value="changes">Request Changes</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Comments & Feedback *</label>
+                    <textarea id="feedbackText" placeholder="Enter your feedback..." rows="5" required></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal('approvalModal')">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Submit Decision</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- View Details Modal -->
+    <div id="detailsModal" class="modal">
+        <div class="modal-content modal-large">
+            <span class="close" onclick="closeModal('detailsModal')">&times;</span>
+            <h2>Submission Details</h2>
+            <div class="design-details">
+                <div class="detail-row">
+                    <span class="detail-label">Designer:</span>
+                    <span id="viewDesigner"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Project:</span>
+                    <span id="viewProject"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Type:</span>
+                    <span id="viewType"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span id="viewStatus"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Submitted:</span>
+                    <span id="viewDate"></span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Description:</span>
+                    <span id="viewDescription"></span>
+                </div>
+            </div>
+            
+            <!-- Comments Section -->
+            <div style="margin-top: 30px; border-top: 1px solid #3a3f45; padding-top: 20px;">
+                <h3 style="margin-bottom: 20px;">Comments & Feedback</h3>
+                <div id="commentsSection" style="max-height: 300px; overflow-y: auto; margin-bottom: 20px;">
+                    <p style="color: #999; text-align: center;">No comments yet...</p>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" onclick="closeModal('detailsModal'); openApprovalModal()">Review & Approve</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal('detailsModal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="api.js"></script>
+    <script src="approver-dashboard.js"></script>
+</body>
+</html>
